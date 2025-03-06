@@ -1,0 +1,2 @@
+D:/8/SWD/plant_explore/android/app/.cxx/Debug/y8144e6j/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/8/SWD/plant_explore/android/app/.cxx/Debug/y8144e6j/armeabi-v7a/CMakeFiles/rebuild_cache.dir
