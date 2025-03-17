@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../core/providers/home_provider.dart';
 import 'profile_screen.dart';
 import 'scan_screen.dart';
 import 'plant_detail_screen.dart';
@@ -10,9 +12,18 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _selectedIndex = 1; // Mặc định ở Home
+  int _selectedIndex = 1;
 
-  // Hàm xử lý khi nhấn vào BottomNavigationBar
+  @override
+  void initState() {
+    super.initState();
+    Future.microtask(() {
+      final homeProvider = Provider.of<HomeProvider>(context, listen: false);
+      homeProvider.fetchPlants();
+      homeProvider.fetchQuizzes();
+    });
+  }
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -21,24 +32,21 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (index) {
       case 0:
         Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => ScanScreen()),
-        );
+            context, MaterialPageRoute(builder: (context) => ScanScreen()));
         break;
       case 1:
-        // Home, không cần chuyển trang
         break;
       case 2:
         Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => QuizzesScreen()),
-        );
+            context, MaterialPageRoute(builder: (context) => QuizzesScreen()));
         break;
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final homeProvider = Provider.of<HomeProvider>(context);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Plant Explorer'),
@@ -46,82 +54,88 @@ class _HomeScreenState extends State<HomeScreen> {
           IconButton(
             icon: Icon(Icons.person),
             onPressed: () {
-              // Mở Profile Screen khi nhấn vào icon Profile
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => ProfileScreen()),
-              );
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => ProfileScreen()));
             },
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Explore Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Explore",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Icon(Icons.arrow_forward),
-              ],
-            ),
-            SizedBox(height: 10),
-            SizedBox(
-              height: 100,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: List.generate(3, (index) {
-                  return GestureDetector(
-                    onTap: () {
-                      // Mở màn hình chi tiết Plant khi nhấn vào 1 Plant Card
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) =>
-                      //         PlantDetailScreen(plantName: "Plant ${index + 1}"),
-                      //   ),
-                      // );
-                    },
-                    child: _buildPlantCard("Plant ${index + 1}"),
-                  );
-                }),
+      body: homeProvider.isLoading
+          ? Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Explore Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Explore",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                      Icon(Icons.arrow_forward),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    height: 100,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: homeProvider.plants.length,
+                      itemBuilder: (context, index) {
+                        final plant = homeProvider.plants[index];
+                        print("Plant Data: $plant");
+                        return GestureDetector(
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => PlantDetailScreen(
+                                  name: plant['name'] ?? "Unknown",
+                                  scientificName:
+                                      plant['scientificName'] ?? "Unknown",
+                                  description: plant['description'] ??
+                                      "No description available.",
+                                ),
+                              ),
+                            );
+                          },
+                          child: _buildPlantCard(plant['name'] ?? "Unknown"),
+                        );
+                      },
+                    ),
+                  ),
+
+                  SizedBox(height: 20),
+                  // Quizzes Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text("Quizzes",
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
+                      Icon(Icons.arrow_forward),
+                    ],
+                  ),
+                  SizedBox(height: 10),
+                  SizedBox(
+                    height: 120,
+                    child: homeProvider.quizzes.isEmpty
+                        ? Center(child: Text("No quizzes available"))
+                        : ListView.builder(
+                            scrollDirection: Axis.horizontal,
+                            itemCount: homeProvider.quizzes.length,
+                            itemBuilder: (context, index) {
+                              final quiz = homeProvider.quizzes[index];
+                              final quizName = quiz['name'] ?? "Unknown Quiz";
+                              return _buildQuizCard(quizName);
+                            },
+                          ),
+                  ),
+                ],
               ),
             ),
-
-            SizedBox(height: 20),
-
-            // Quizzes Section
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "Quizzes",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                Icon(Icons.arrow_forward),
-              ],
-            ),
-            SizedBox(height: 10),
-            SizedBox(
-              height: 120,
-              child: ListView(
-                scrollDirection: Axis.horizontal,
-                children: List.generate(3, (index) {
-                  return _buildQuizCard("Quiz ${index + 1}");
-                }),
-              ),
-            ),
-          ],
-        ),
-      ),
-
-      // Bottom Navigation Bar
       bottomNavigationBar: BottomNavigationBar(
         currentIndex: _selectedIndex,
         onTap: _onItemTapped,
@@ -134,17 +148,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget for Plant Card
   Widget _buildPlantCard(String plantName) {
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Column(
         children: [
           CircleAvatar(
-            radius: 30,
-            backgroundColor: Colors.grey[300],
-            child: Icon(Icons.image, size: 30, color: Colors.grey),
-          ),
+              radius: 30,
+              backgroundColor: Colors.grey[300],
+              child: Icon(Icons.image, size: 30, color: Colors.grey)),
           SizedBox(height: 5),
           Text(plantName, style: TextStyle(fontSize: 14)),
         ],
@@ -152,8 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // Widget for Quiz Card
-  Widget _buildQuizCard(String quizName) {
+  Widget _buildQuizCard(String? quizName) {
     return Padding(
       padding: const EdgeInsets.only(right: 10),
       child: Container(
@@ -168,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: [
             Icon(Icons.image, size: 40, color: Colors.grey),
             SizedBox(height: 5),
-            Text(quizName, style: TextStyle(fontSize: 14)),
+            Text(quizName ?? "Unknown", style: TextStyle(fontSize: 14)),
             Text("1 Point", style: TextStyle(fontSize: 12, color: Colors.grey)),
           ],
         ),

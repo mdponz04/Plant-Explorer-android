@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:plant_explore/screen/question_screen.dart';
 
 class QuizzesScreen extends StatelessWidget {
   @override
@@ -19,7 +20,6 @@ class QuizzesScreen extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Quiz Banner
             Container(
               height: 120,
               decoration: BoxDecoration(
@@ -39,12 +39,9 @@ class QuizzesScreen extends StatelessWidget {
               ),
             ),
             SizedBox(height: 16),
-
-            // Recommended Quizzes Section
             Text("Recommended Quizzes",
                 style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             SizedBox(height: 8),
-
             ListView.builder(
               shrinkWrap: true,
               physics: NeverScrollableScrollPhysics(),
@@ -63,6 +60,15 @@ class QuizzesScreen extends StatelessWidget {
                     subtitle: Text(
                         "Supporting line text lorem ipsum dolor sit amet, consectetur."),
                     trailing: Icon(Icons.more_vert),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              QuestionScreen(quizTitle: "Quiz ${index + 1}"),
+                        ),
+                      );
+                    },
                   ),
                 );
               },
@@ -76,7 +82,7 @@ class QuizzesScreen extends StatelessWidget {
           BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
           BottomNavigationBarItem(icon: Icon(Icons.quiz), label: "Quizzes"),
         ],
-        currentIndex: 2, // Quizzes selected
+        currentIndex: 2,
         onTap: (index) {},
       ),
     );
