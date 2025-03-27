@@ -1,0 +1,2 @@
+D:/8/SWD/plant_explore/android/app/.cxx/RelWithDebInfo/6d1a2d52/x86_64/CMakeFiles/edit_cache.dir
+D:/8/SWD/plant_explore/android/app/.cxx/RelWithDebInfo/6d1a2d52/x86_64/CMakeFiles/rebuild_cache.dir

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:plant_explore/core/providers/user_provider.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../core/providers/auth_provider.dart';
 import 'register_screen.dart';
+import 'home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -13,8 +16,27 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController passwordController = TextEditingController();
 
   @override
+  void initState() {
+    super.initState();
+    checkLoginStatus();
+  }
+
+  Future<void> checkLoginStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('token');
+    if (token != null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => HomeScreen()),
+      );
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
+    final userProvider = Provider.of<UserProvider>(context,
+        listen: false); // ✅ Moved inside build()
 
     return Scaffold(
       appBar: AppBar(title: Text('Login')),
@@ -39,7 +61,15 @@ class _LoginScreenState extends State<LoginScreen> {
                 await authProvider.login(
                   emailController.text,
                   passwordController.text,
+                  userProvider, // ✅ Đúng, truyền instance của UserProvider
                 );
+
+                if (authProvider.token != null) {
+                  Navigator.pushReplacement(
+                    context,
+                    MaterialPageRoute(builder: (context) => HomeScreen()),
+                  );
+                }
               },
               child: authProvider.isLoading
                   ? CircularProgressIndicator()
@@ -47,8 +77,10 @@ class _LoginScreenState extends State<LoginScreen> {
             ),
             TextButton(
               onPressed: () {
-                Navigator.push(context,
-                    MaterialPageRoute(builder: (context) => RegisterScreen()));
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => RegisterScreen()),
+                );
               },
               child: Text('Don\'t have an account? Register'),
             ),

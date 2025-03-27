@@ -1,89 +1,82 @@
 import 'package:flutter/material.dart';
+import 'package:plant_explore/core/providers/quiz_provider.dart';
 import 'package:plant_explore/screen/question_screen.dart';
+import 'package:provider/provider.dart';
 
-class QuizzesScreen extends StatelessWidget {
+class QuizzesScreen extends StatefulWidget {
+  const QuizzesScreen({super.key});
+
+  @override
+  _QuizzesScreenState createState() => _QuizzesScreenState();
+}
+
+class _QuizzesScreenState extends State<QuizzesScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      Provider.of<QuizProvider>(context, listen: false).fetchQuizzes();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Quizzes"),
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(icon: Icon(Icons.more_vert), onPressed: () {}),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              height: 120,
-              decoration: BoxDecoration(
-                color: Colors.grey[300],
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Center(
-                child: Icon(Icons.image, size: 60, color: Colors.grey[600]),
-              ),
-            ),
-            SizedBox(height: 8),
-            Align(
-              alignment: Alignment.centerRight,
-              child: TextButton(
-                onPressed: () {},
-                child: Text("Show all", style: TextStyle(color: Colors.purple)),
-              ),
-            ),
-            SizedBox(height: 16),
-            Text("Recommended Quizzes",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-            SizedBox(height: 8),
-            ListView.builder(
-              shrinkWrap: true,
-              physics: NeverScrollableScrollPhysics(),
-              itemCount: 4,
-              itemBuilder: (context, index) {
-                return Card(
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
-                  child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.grey[300],
-                      child: Icon(Icons.image, size: 30),
-                    ),
-                    title: Text("Quiz ${index + 1}",
-                        style: TextStyle(fontWeight: FontWeight.bold)),
-                    subtitle: Text(
-                        "Supporting line text lorem ipsum dolor sit amet, consectetur."),
-                    trailing: Icon(Icons.more_vert),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              QuestionScreen(quizTitle: "Quiz ${index + 1}"),
-                        ),
-                      );
-                    },
+      appBar: AppBar(title: const Text("Quizzes")),
+      body: Consumer<QuizProvider>(
+        builder: (context, quizProvider, child) {
+          if (quizProvider.isLoading) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          if (quizProvider.quizzes.isEmpty) {
+            return const Center(child: Text("No quizzes available"));
+          }
+
+          return ListView.builder(
+            padding: const EdgeInsets.all(16),
+            itemCount: quizProvider.quizzes.length,
+            itemBuilder: (context, index) {
+              final quiz = quizProvider.quizzes[index];
+
+              return Card(
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 4,
+                margin: const EdgeInsets.only(bottom: 12),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.all(12),
+                  leading: CircleAvatar(
+                    backgroundImage: (quiz.imageUrl?.isNotEmpty ?? false)
+                        ? NetworkImage(quiz.imageUrl!)
+                        : null,
+                    child: (quiz.imageUrl?.isEmpty ?? true)
+                        ? const Icon(Icons.quiz)
+                        : null,
                   ),
-                );
-              },
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: [
-          BottomNavigationBarItem(icon: Icon(Icons.explore), label: "Explore"),
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-          BottomNavigationBarItem(icon: Icon(Icons.quiz), label: "Quizzes"),
-        ],
-        currentIndex: 2,
-        onTap: (index) {},
+                  title: Text(
+                    quiz.name ?? "Unnamed Quiz",
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: const Text("Tap to start quiz"),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => QuestionScreen(
+                          quizId: quiz.id,
+                          quizTitle: quiz.name ?? "Quiz",
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              );
+            },
+          );
+        },
       ),
     );
   }
