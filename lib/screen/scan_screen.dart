@@ -1,4 +1,4 @@
-import 'dart:convert';
+/*import 'dart:convert';
 import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
@@ -201,6 +201,104 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
               icon: Icon(Icons.camera_alt_sharp, color: Colors.green),
               onPressed: _captureAndIdentify),
         ],
+      ),
+    );
+  }
+}*/
+
+//--------------------------------------------------------------------
+
+import 'dart:convert';
+import 'dart:io';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
+import 'package:provider/provider.dart';
+import 'package:plant_explore/core/providers/auth_provider.dart';
+
+class ScanScreen extends StatefulWidget {
+  @override
+  _ScanScreenState createState() => _ScanScreenState();
+}
+
+class _ScanScreenState extends State<ScanScreen> {
+  File? _image;
+  final ImagePicker _picker = ImagePicker();
+
+  // Function to capture an image from the camera
+  Future<void> _captureImage() async {
+    final XFile? pickedFile =
+        await _picker.pickImage(source: ImageSource.camera);
+    if (pickedFile != null) {
+      setState(() {
+        _image = File(pickedFile.path);
+      });
+
+      // Small delay to prevent OpenGL crash
+      await Future.delayed(Duration(milliseconds: 300));
+
+      await _uploadImage(_image!);
+    }
+  }
+
+  // Function to upload the image to the backend API
+  Future<void> _uploadImage(File imageFile) async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token == null) {
+      print("Authentication required!");
+      return;
+    }
+    var uri = Uri.parse(
+        'https://plant-explorer-backend-0-0-1.onrender.com/api/scan-histories/identify');
+
+    var request = http.MultipartRequest('POST', uri)
+      ..headers.addAll({
+        'Authorization': 'Bearer $token',
+      })
+      ..files.add(
+        await http.MultipartFile.fromPath(
+          'file', // Make sure this matches API expectations
+          imageFile.path,
+          contentType: MediaType('image', 'jpeg'),
+        ),
+      );
+
+    try {
+      var response = await request.send();
+
+      if (response.statusCode == 200) {
+        var responseBody = await response.stream.bytesToString();
+        var jsonResponse = jsonDecode(responseBody);
+
+        if (jsonResponse.containsKey('cacheKey')) {
+          print(
+              'Cache Key: ${jsonResponse['cacheKey']}'); // Prints the cache key
+        } else {
+          print('Image uploaded, but no cache key found.');
+        }
+      } else {
+        print('Image upload failed with status: ${response.statusCode}');
+      }
+    } catch (e) {
+      print('Error uploading image: $e');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Scan Plant'),
+      ),
+      body: Center(
+        child:
+            _image == null ? Text('No image captured.') : Image.file(_image!),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _captureImage,
+        tooltip: 'Capture Image',
+        child: Icon(Icons.camera_alt),
       ),
     );
   }
