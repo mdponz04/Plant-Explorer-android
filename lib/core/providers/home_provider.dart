@@ -57,7 +57,8 @@ class HomeProvider with ChangeNotifier {
   Future<void> fetchFavoritePlants() async {
     final url = Uri.parse(
         'https://plant-explorer-backend-0-0-1.onrender.com/api/favorite-plant?index=1&pageSize=10');
-    final token = authProvider.token; // Get token from AuthProvider
+    final token = authProvider.token;
+
     if (token == null) {
       print("Error: No token found. Please log in.");
       _isLoading = false;
@@ -65,21 +66,40 @@ class HomeProvider with ChangeNotifier {
       return;
     }
 
-    final response = await http.get(
-      url,
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-    );
+    _isLoading = true;
+    notifyListeners();
 
-    if (response.statusCode == 200) {
-      final List<dynamic> decodedData = jsonDecode(response.body);
-      _plants = decodedData.map((e) => Plant.fromJson(e)).toList();
-      print("Fetched Plants: $_plants");
-    } else {
-      print("Error fetching plants: ${response.statusCode}");
-      _plants = [];
+    try {
+      final response = await http.get(
+        url,
+        headers: {
+          'Authorization': 'Bearer $token',
+          'Content-Type': 'application/json',
+        },
+      );
+
+      print("Response Body: ${response.body}"); // Debugging
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> jsonResponse = jsonDecode(response.body);
+
+        // Ensure "data" exists and is a list
+        if (jsonResponse.containsKey('data') && jsonResponse['data'] is List) {
+          final List<dynamic> plantList = jsonResponse['data'];
+
+          _favoritePlants = plantList.map((e) => Plant.fromJson(e)).toList();
+          print("Fetched Favorite Plants: $_favoritePlants");
+        } else {
+          print("Error: 'data' key not found or not a list.");
+          _favoritePlants = [];
+        }
+      } else {
+        print("Error fetching favorite plants: ${response.statusCode}");
+        _favoritePlants = [];
+      }
+    } catch (error) {
+      print("Exception while fetching favorite plants: $error");
+      _favoritePlants = [];
     }
 
     _isLoading = false;

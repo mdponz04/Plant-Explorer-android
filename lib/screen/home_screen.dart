@@ -26,6 +26,7 @@ class _HomeScreenState extends State<HomeScreen> {
       final homeProvider = context.read<HomeProvider>();
       homeProvider.fetchPlants();
       homeProvider.fetchQuizzes();
+      homeProvider.fetchFavoritePlants();
     });
   }
 
@@ -70,7 +71,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 icon: Icon(Icons.logout),
                 onPressed: () {
                   authProvider.logout();
-                  Navigator.pushReplacementNamed(context, '/login');
                 },
               ),
       ],
@@ -85,8 +85,8 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _buildSection("Plants", homeProvider.plants, _buildPlantCard),
           _buildSection("Quizzes", homeProvider.quizzes, _buildQuizCard),
-          _buildSection(
-              "Favorite Plants", homeProvider.favoritePlants, _buildPlantCard),
+          _buildSection("Favorite Plants", homeProvider.favoritePlants,
+              _buildFavoritePlantCard),
         ],
       ),
     );
@@ -147,6 +147,28 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildFavoritePlantCard(Plant plant) {
+    return GestureDetector(
+      onTap: () => _navigateToScreen(PlantDetailScreen(plant: plant)),
+      child: Column(
+        children: [
+          CircleAvatar(
+            radius: 30,
+            backgroundColor: Colors.grey[300],
+            child: Icon(Icons.favorite,
+                size: 30, color: Colors.red), // Default icon
+          ),
+          SizedBox(height: 5),
+          Text(
+            plant.scientificName,
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildQuizCard(Quiz quiz) {
     return Container(
       width: 200,
@@ -193,9 +215,11 @@ class _HomeScreenState extends State<HomeScreen> {
       currentIndex: _selectedIndex,
       onTap: _onItemTapped,
       items: [
-        BottomNavigationBarItem(icon: Icon(Icons.camera), label: "Explore"),
-        BottomNavigationBarItem(icon: Icon(Icons.home), label: "Home"),
-        BottomNavigationBarItem(icon: Icon(Icons.quiz), label: "Quizzes"),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.camera_alt_sharp), label: "Explore"),
+        BottomNavigationBarItem(icon: Icon(Icons.home_filled), label: "Home"),
+        BottomNavigationBarItem(
+            icon: Icon(Icons.quiz_rounded), label: "Quizzes"),
       ],
     );
   }

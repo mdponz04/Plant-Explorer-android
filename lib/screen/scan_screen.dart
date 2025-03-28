@@ -1,8 +1,8 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:math';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
-import 'package:gal/gal.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:plant_explore/core/providers/auth_provider.dart';
@@ -14,7 +14,6 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   CameraController? _cameraController;
-  String? _savedImagePath;
   Map<String, dynamic>? _plantInfo;
 
   @override
@@ -51,53 +50,39 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _captureAndIdentify() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized)
-      return;
-
+    if (!(_cameraController?.value.isInitialized ?? false)) return;
     try {
-      final XFile picture = await _cameraController!.takePicture();
-
-      try {
-        await Gal.putImage(picture.path);
-      } catch (e) {
-        _showMessage("Error saving to gallery: $e", isError: true);
-      }
-
+      final picture = await _cameraController!.takePicture();
+      File imageFile = File(picture.path);
+      print("Image saved at: ${picture?.path}");
       _showMessage("Uploading image...");
-      await _uploadImageAndFetchPlantInfo(picture);
+      await _uploadImageAndFetchPlantInfo(imageFile);
     } catch (e) {
       _showMessage("Error capturing image: $e", isError: true);
     }
   }
 
-  Future<void> _uploadImageAndFetchPlantInfo(XFile picture) async {
-    if (_savedImagePath == null) return;
-
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
+  Future<void> _uploadImageAndFetchPlantInfo(File picture) async {
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
     if (token == null) {
       _showMessage("Authentication required!", isError: true);
       return;
     }
-    // Kiểm tra phần mở rộng file
     if (!picture.path.toLowerCase().endsWith('.jpg')) {
-      _showMessage("Chỉ hỗ trợ file .jpg!", isError: true);
+      _showMessage("Only .jpg files are supported!", isError: true);
       return;
     }
     try {
       var url = Uri.parse(
           "https://plant-explorer-backend-0-0-1.onrender.com/api/scan-histories/identify");
-
       var request = http.MultipartRequest('POST', url)
         ..headers['Authorization'] = 'Bearer $token'
-        ..headers['Content-Type'] = 'multipart/form-data'; // Add this line
-      var response = await request.send();
+        ..files.add(await http.MultipartFile.fromPath('file', picture.path));
 
+      var response = await request.send();
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(await response.stream.bytesToString());
         String? cacheKey = jsonResponse['cacheKey'];
-
         if (cacheKey != null) {
           _fetchPlantDetails(cacheKey);
         } else {
@@ -112,27 +97,16 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchPlantDetails(String cacheKey) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
-    if (token == null) {
-      _showMessage("Authentication required!", isError: true);
-      return;
-    }
-
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
+    if (token == null) return;
     try {
-      var plantInfoUrl = Uri.parse(
+      var url = Uri.parse(
           "https://plant-explorer-backend-0-0-1.onrender.com/api/scan-histories/plant-info/$cacheKey");
-
-      var response = await http.get(plantInfoUrl, headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json'
-      });
-
+      var response =
+          await http.get(url, headers: {'Authorization': 'Bearer $token'});
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(response.body);
         String? plantId = jsonResponse['plant']?['id'];
-
         if (plantId != null) {
           await _fetchPlantById(plantId);
         } else {
@@ -148,21 +122,14 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _fetchPlantById(String plantId) async {
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    final token = authProvider.token;
-
+    final token = Provider.of<AuthProvider>(context, listen: false).token;
     try {
       var url = Uri.parse(
           "https://plant-explorer-backend-0-0-1.onrender.com/api/plants/$plantId");
-
-      var response = await http.get(url, headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json'
-      });
-
+      var response =
+          await http.get(url, headers: {'Authorization': 'Bearer $token'});
       if (response.statusCode == 200) {
-        var jsonResponse = json.decode(response.body);
-        setState(() => _plantInfo = jsonResponse);
+        setState(() => _plantInfo = json.decode(response.body));
         _showPlantInfoDialog();
       } else {
         _showMessage("Failed to fetch plant details: ${response.statusCode}",
@@ -174,11 +141,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   void _showPlantInfoDialog() {
-    if (_plantInfo == null) {
-      _showMessage("No plant information found.", isError: true);
-      return;
-    }
-
+    if (_plantInfo == null) return;
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -186,30 +149,18 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         content: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _buildPlantDetail(
-                  "🌿 Scientific Name", _plantInfo?['scientificName']),
-              _buildPlantDetail("🌱 Family", _plantInfo?['family']),
-              _buildPlantDetail("📜 Description", _plantInfo?['description']),
-              _buildPlantDetail("🏞 Habitat", _plantInfo?['habitat']),
-              _buildPlantDetail("🌍 Distribution", _plantInfo?['distribution']),
-              _buildPlantDetail(
-                  "💊 Medicinal Uses", _plantInfo?['medicinalUses']),
-            ],
+            children: _plantInfo!.entries
+                .map((e) => Text("${e.key}: ${e.value}"))
+                .toList(),
           ),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("Close"),
-          ),
+              onPressed: () => Navigator.pop(context),
+              child: const Text("Close"))
         ],
       ),
     );
-  }
-
-  Widget _buildPlantDetail(String label, String? value) {
-    return Text("$label: ${value ?? 'N/A'}");
   }
 
   void _showMessage(String message, {bool isError = false}) {
@@ -233,7 +184,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                   : Center(child: CircularProgressIndicator())),
           IconButton(
               iconSize: 80,
-              icon: Icon(Icons.camera, color: Colors.green),
+              icon: Icon(Icons.camera_alt_sharp, color: Colors.green),
               onPressed: _captureAndIdentify),
         ],
       ),
