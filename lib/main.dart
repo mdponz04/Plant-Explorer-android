@@ -7,8 +7,6 @@ import 'package:plant_explore/core/providers/user_provider.dart';
 import 'package:plant_explore/core/providers/quiz_provider.dart'; // Import UserProvider
 import 'package:plant_explore/screen/login_screen.dart';
 import 'package:provider/provider.dart';
-import 'core/providers/plant_provider.dart';
-import 'screen/home_screen.dart';
 
 void main() async {
   runApp(
@@ -37,6 +35,8 @@ void main() async {
 }
 
 class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
     return MaterialApp(

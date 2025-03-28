@@ -8,7 +8,7 @@ import 'package:plant_explore/model/plant.dart';
 class PlantDetailScreen extends StatefulWidget {
   final Plant plant;
 
-  const PlantDetailScreen({Key? key, required this.plant}) : super(key: key);
+  const PlantDetailScreen({super.key, required this.plant});
 
   @override
   _PlantDetailScreenState createState() => _PlantDetailScreenState();

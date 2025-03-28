@@ -1,0 +1,2 @@
+D:/code/git/Plant-Explorer-android/android/app/.cxx/Debug/501v116v/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/code/git/Plant-Explorer-android/android/app/.cxx/Debug/501v116v/armeabi-v7a/CMakeFiles/rebuild_cache.dir

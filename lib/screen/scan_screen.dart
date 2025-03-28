@@ -1,13 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:math';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 import 'package:plant_explore/core/providers/auth_provider.dart';
+import 'package:http_parser/http_parser.dart';
+import 'dart:typed_data';
+import 'package:http/http.dart' as http;
 
 class ScanScreen extends StatefulWidget {
+  const ScanScreen({super.key});
+
   @override
   _ScanScreenState createState() => _ScanScreenState();
 }
@@ -54,7 +58,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     try {
       final picture = await _cameraController!.takePicture();
       File imageFile = File(picture.path);
-      print("Image saved at: ${picture?.path}");
+      print("Image saved at: ${picture.path}");
       _showMessage("Uploading image...");
       await _uploadImageAndFetchPlantInfo(imageFile);
     } catch (e) {
@@ -68,18 +72,28 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       _showMessage("Authentication required!", isError: true);
       return;
     }
-    if (!picture.path.toLowerCase().endsWith('.jpg')) {
+    /*if (!picture.path.toLowerCase().endsWith('.jpg')) {
       _showMessage("Only .jpg files are supported!", isError: true);
       return;
-    }
+    }*/
+
     try {
+      //Uint8List imageBytes = await picture.readAsBytes();
       var url = Uri.parse(
           "https://plant-explorer-backend-0-0-1.onrender.com/api/scan-histories/identify");
       var request = http.MultipartRequest('POST', url)
         ..headers['Authorization'] = 'Bearer $token'
-        ..files.add(await http.MultipartFile.fromPath('file', picture.path));
+        ..files.add(await http.MultipartFile.fromPath(
+          'file',
+          picture.path,
+          contentType: MediaType('image', 'jpg'),
+        ));
 
       var response = await request.send();
+      //Debug log response
+      var responseBody = await response.stream.bytesToString();
+      print("Response: ${response.statusCode} - $responseBody");
+
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(await response.stream.bytesToString());
         String? cacheKey = jsonResponse['cacheKey'];

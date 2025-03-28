@@ -1,0 +1,1 @@
+D:\code\git\Plant-Explorer-android\build\app\intermediates\cxx\Debug\501v116v\obj\armeabi-v7a

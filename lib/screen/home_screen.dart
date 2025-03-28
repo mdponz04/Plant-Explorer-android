@@ -12,6 +12,8 @@ import 'quizzes_screen.dart';
 import 'login_screen.dart';
 
 class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -183,11 +185,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          quiz.imageUrl != null && quiz.imageUrl!.isNotEmpty
+          quiz.imageUrl.isNotEmpty
               ? ClipRRect(
                   borderRadius: BorderRadius.circular(8),
                   child: Image.network(
-                    quiz.imageUrl!,
+                    quiz.imageUrl,
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,
