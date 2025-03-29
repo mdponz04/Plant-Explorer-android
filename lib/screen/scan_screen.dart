@@ -264,24 +264,25 @@ class _ScanScreenState extends State<ScanScreen> {
         ),
       );
 
-    try {
-      var response = await request.send();
+    var response = await request.send();
 
-      if (response.statusCode == 200) {
-        var responseBody = await response.stream.bytesToString();
-        var jsonResponse = jsonDecode(responseBody);
+    if (response.statusCode == 200) {
+      /*var responseBody = await response.stream.bytesToString();
+      var jsonResponse = jsonDecode(responseBody);
 
-        if (jsonResponse.containsKey('cacheKey')) {
-          print(
-              'Cache Key: ${jsonResponse['cacheKey']}'); // Prints the cache key
-        } else {
-          print('Image uploaded, but no cache key found.');
-        }
+      if (jsonResponse.containsKey('cacheKey')) {
+        print('Cache Key: ${jsonResponse['cacheKey']}'); // Prints the cache key
       } else {
-        print('Image upload failed with status: ${response.statusCode}');
+        print('Image uploaded, but no cache key found.');
+      }*/
+      var cacheKey = await response.stream.bytesToString();
+      if (cacheKey.isNotEmpty) {
+        print('Response from server: $cacheKey');
+      } else {
+        print('Response is empty or null');
       }
-    } catch (e) {
-      print('Error uploading image: $e');
+    } else {
+      print('Image upload failed with status: ${response.statusCode}');
     }
   }
 
