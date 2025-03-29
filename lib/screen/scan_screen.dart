@@ -49,29 +49,33 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     }
   }
 
-  Future<void> _captureAndIdentify() async {
-    if (!(_cameraController?.value.isInitialized ?? false)) return;
+  Future<void> _captureAndIdentify(BuildContext context) async {
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
+      return;
+    }
+
     try {
       final picture = await _cameraController!.takePicture();
       File imageFile = File(picture.path);
-      print("Image saved at: ${picture?.path}");
+
+      print("Image saved at: ${picture.path}");
       _showMessage("Uploading image...");
-      await _uploadImageAndFetchPlantInfo(imageFile);
+
+      await _uploadImageAndFetchPlantInfo(context, imageFile);
     } catch (e) {
       _showMessage("Error capturing image: $e", isError: true);
     }
   }
 
-  Future<void> _uploadImageAndFetchPlantInfo(File picture) async {
+  Future<http.StreamedResponse?> _uploadImageAndFetchPlantInfo(
+      BuildContext context, File picture) async {
     final token = Provider.of<AuthProvider>(context, listen: false).token;
-    if (token == null) {
-      _showMessage("Authentication required!", isError: true);
-      return;
-    }
+
     if (!picture.path.toLowerCase().endsWith('.jpg')) {
       _showMessage("Only .jpg files are supported!", isError: true);
-      return;
+      return null;
     }
+
     try {
       var url = Uri.parse(
           "https://plant-explorer-backend-0-0-1.onrender.com/api/scan-histories/identify");
@@ -80,20 +84,29 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
         ..files.add(await http.MultipartFile.fromPath('file', picture.path));
 
       var response = await request.send();
+
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(await response.stream.bytesToString());
         String? cacheKey = jsonResponse['cacheKey'];
+
         if (cacheKey != null) {
           _fetchPlantDetails(cacheKey);
         } else {
           _showMessage("No plant found.", isError: true);
         }
+        return response;
       } else {
         _showMessage("Upload failed: ${response.statusCode}", isError: true);
+        return response;
       }
     } catch (e) {
       _showMessage("Error uploading image: $e", isError: true);
+      return null;
     }
+  }
+
+  void _showMessage(String message, {bool isError = false}) {
+    debugPrint(message); // Replace with Snackbar or Dialog if needed
   }
 
   Future<void> _fetchPlantDetails(String cacheKey) async {
@@ -163,14 +176,6 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
     );
   }
 
-  void _showMessage(String message, {bool isError = false}) {
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-      content: Text(message, style: TextStyle(color: Colors.white)),
-      backgroundColor: isError ? Colors.red : Colors.green,
-      duration: const Duration(seconds: 2),
-    ));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -183,9 +188,12 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
                   ? CameraPreview(_cameraController!)
                   : Center(child: CircularProgressIndicator())),
           IconButton(
-              iconSize: 80,
-              icon: Icon(Icons.camera_alt_sharp, color: Colors.green),
-              onPressed: _captureAndIdentify),
+            iconSize: 80,
+            icon: Icon(Icons.camera_alt_sharp, color: Colors.green),
+            onPressed: () async {
+              await _captureAndIdentify(context);
+            },
+          ),
         ],
       ),
     );
