@@ -48,10 +48,10 @@ class _QuizzesScreenState extends State<QuizzesScreen> {
                 child: ListTile(
                   contentPadding: const EdgeInsets.all(12),
                   leading: CircleAvatar(
-                    backgroundImage: (quiz.imageUrl?.isNotEmpty ?? false)
-                        ? NetworkImage(quiz.imageUrl!)
+                    backgroundImage: (quiz.imageUrl.isNotEmpty ?? false)
+                        ? NetworkImage(quiz.imageUrl)
                         : null,
-                    child: (quiz.imageUrl?.isEmpty ?? true)
+                    child: (quiz.imageUrl.isEmpty ?? true)
                         ? const Icon(Icons.quiz)
                         : null,
                   ),

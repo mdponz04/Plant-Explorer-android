@@ -1,5 +1,4 @@
 import 'dart:convert';
-import 'dart:io';
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
 import 'package:gal/gal.dart';
@@ -8,6 +7,8 @@ import 'package:provider/provider.dart';
 import 'package:plant_explore/core/providers/auth_provider.dart';
 
 class ScanScreen extends StatefulWidget {
+  const ScanScreen({super.key});
+
   @override
   _ScanScreenState createState() => _ScanScreenState();
 }
@@ -51,8 +52,9 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
   }
 
   Future<void> _captureAndIdentify() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized)
+    if (_cameraController == null || !_cameraController!.value.isInitialized) {
       return;
+    }
 
     try {
       final XFile picture = await _cameraController!.takePicture();
@@ -97,7 +99,7 @@ class _ScanScreenState extends State<ScanScreen> with WidgetsBindingObserver {
       if (response.statusCode == 200) {
         var jsonResponse = json.decode(await response.stream.bytesToString());
         String? cacheKey = jsonResponse['cacheKey'];
-
+        print(cacheKey);
         if (cacheKey != null) {
           _fetchPlantDetails(cacheKey);
         } else {

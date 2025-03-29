@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:plant_explore/model/favoritePlant.dart';
 import 'package:plant_explore/model/plant.dart';
 import 'package:plant_explore/model/quiz.dart';
 import 'dart:convert';
@@ -8,12 +9,12 @@ import 'auth_provider.dart';
 class HomeProvider with ChangeNotifier {
   List<Plant> _plants = [];
   List<Quiz> _quizzes = [];
-  List<Plant> _favoritePlants = [];
+  List<Favoriteplant> _favoritePlants = [];
   bool _isLoading = false;
   final AuthProvider authProvider; // Reference to AuthProvider
 
   HomeProvider(this.authProvider); // Require AuthProvider in constructor
-  List<Plant> get favoritePlants => _favoritePlants;
+  List<Favoriteplant> get favoritePlants => _favoritePlants;
   List<Plant> get plants => _plants;
   List<Quiz> get quizzes => _quizzes;
   bool get isLoading => _isLoading;
@@ -73,13 +74,17 @@ class HomeProvider with ChangeNotifier {
       },
     );
 
+    print("Favorite Plants API Status Code: ${response.statusCode}");
+    print("Favorite Plants API Response Body: ${response.body}");
+
     if (response.statusCode == 200) {
-      final List<dynamic> decodedData = jsonDecode(response.body);
-      _plants = decodedData.map((e) => Plant.fromJson(e)).toList();
-      print("Fetched Plants: $_plants");
+      final Map<String, dynamic> decodedData = jsonDecode(response.body);
+      final List<dynamic> items = decodedData['data']['items'] ?? [];
+      _favoritePlants = items.map((e) => Favoriteplant.fromJson(e)).toList();
+      print("Fetched Plants: $_favoritePlants");
     } else {
       print("Error fetching plants: ${response.statusCode}");
-      _plants = [];
+      _favoritePlants = [];
     }
 
     _isLoading = false;

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 import '../core/providers/user_provider.dart';
 
 class ProfileScreen extends StatefulWidget {
+  const ProfileScreen({super.key});
+
   @override
   _ProfileScreenState createState() => _ProfileScreenState();
 }
@@ -114,7 +116,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     TextEditingController avatarController =
         TextEditingController(text: user['avatarUrl'] ?? "");
 
-    final _formKey = GlobalKey<FormState>();
+    final formKey = GlobalKey<FormState>();
 
     showDialog(
       context: context,
@@ -123,7 +125,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           title: Text("Edit User"),
           content: SingleChildScrollView(
             child: Form(
-              key: _formKey,
+              key: formKey,
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -169,7 +171,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ),
             ElevatedButton(
               onPressed: () async {
-                if (_formKey.currentState!.validate()) {
+                if (formKey.currentState!.validate()) {
                   final authProvider =
                       Provider.of<AuthProvider>(context, listen: false);
                   final userProvider =
